@@ -146,6 +146,44 @@ export default function NotificationsPage() {
     }
   }, []);
 
+  // Archivar notificación
+  const handleArchiveNotification = useCallback(async (notificationId) => {
+    try {
+      setActionLoading(true);
+      // Aquí iría la llamada a la API para archivar
+      // await archiveNotification(notificationId);
+      
+      // Por ahora, simulamos archivando (marcando como leída y ocultando)
+      const archivedNotification = notifications.find(n => n.id === notificationId);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+      if (stats && archivedNotification && !archivedNotification.read) {
+        setStats(prev => ({
+          ...prev,
+          total: prev.total - 1,
+          unread: prev.unread - 1
+        }));
+      } else if (stats) {
+        setStats(prev => ({
+          ...prev,
+          total: prev.total - 1
+        }));
+      }
+      
+      // Cerrar modal si la notificación archivada estaba siendo vista
+      if (selectedNotification?.id === notificationId) {
+        setIsDetailModalOpen(false);
+        setSelectedNotification(null);
+      }
+      
+      console.log('Notificación archivada exitosamente');
+    } catch (err) {
+      console.error('Error archiving notification:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [notifications, stats, selectedNotification]);
+
   // Eliminar notificación
   const handleDeleteNotification = useCallback(async (notificationId) => {
     try {
@@ -254,6 +292,7 @@ export default function NotificationsPage() {
           onView={handleViewNotification}
           onMarkAsRead={handleMarkAsRead}
           onDelete={handleDeleteNotification}
+          onArchive={handleArchiveNotification}
           loading={actionLoading}
         />
         
@@ -263,6 +302,7 @@ export default function NotificationsPage() {
           onView={handleViewNotification}
           onMarkAsRead={handleMarkAsRead}
           onDelete={handleDeleteNotification}
+          onArchive={handleArchiveNotification}
           loading={actionLoading}
         />
       </>
@@ -318,6 +358,7 @@ export default function NotificationsPage() {
           }}
           onMarkAsRead={handleMarkAsRead}
           onDelete={handleDeleteNotification}
+          onArchive={handleArchiveNotification}
           loading={actionLoading}
         />
 

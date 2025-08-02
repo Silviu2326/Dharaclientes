@@ -24,6 +24,7 @@ const mockMetrics = {
 const mockPreferences = {
   theme: 'light',
   language: 'es',
+  timezone: 'Europe/Madrid',
   notifications: {
     email: true,
     push: true,

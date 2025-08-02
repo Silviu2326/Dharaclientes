@@ -92,7 +92,14 @@ const mockMessages = {
       timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
       senderId: 'therapist-1',
       sender: { id: 'therapist-1', name: 'Dra. María González', avatar: null },
-      status: 'delivered'
+      status: 'delivered',
+      reactions: [
+        {
+          userId: 'user-1',
+          emoji: '❤️',
+          timestamp: new Date(Date.now() - 58 * 60 * 1000).toISOString()
+        }
+      ]
     },
     {
       id: 'msg-1-5',
@@ -114,7 +121,14 @@ const mockMessages = {
       timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
       senderId: 'user-1',
       sender: { id: 'user-1', name: 'Usuario', avatar: null },
-      status: 'read'
+      status: 'read',
+      reactions: [
+        {
+          userId: 'therapist-1',
+          emoji: '👍',
+          timestamp: new Date(Date.now() - 34 * 60 * 1000).toISOString()
+        }
+      ]
     },
     {
       id: 'msg-1-7',
@@ -375,6 +389,81 @@ export const Chat = () => {
     console.log('Loading more messages...');
   };
 
+  const handleReaction = (messageId, emoji) => {
+    setMessages(prev => 
+      prev.map(msg => {
+        if (msg.id === messageId) {
+          const reactions = msg.reactions || [];
+          const existingReaction = reactions.find(r => r.userId === currentUserId);
+          
+          if (existingReaction) {
+            // Si ya reaccionó, cambiar la reacción o eliminarla si es la misma
+            if (existingReaction.emoji === emoji) {
+              return {
+                ...msg,
+                reactions: reactions.filter(r => r.userId !== currentUserId)
+              };
+            } else {
+              return {
+                ...msg,
+                reactions: reactions.map(r => 
+                  r.userId === currentUserId ? { ...r, emoji } : r
+                )
+              };
+            }
+          } else {
+            // Nueva reacción
+            return {
+              ...msg,
+              reactions: [...reactions, {
+                userId: currentUserId,
+                emoji,
+                timestamp: new Date().toISOString()
+              }]
+            };
+          }
+        }
+        return msg;
+      })
+    );
+  };
+
+  const handleForward = (messageId) => {
+    const message = messages.find(msg => msg.id === messageId);
+    if (message && message.attachment) {
+      // Simular reenvío de archivo
+      const forwardedMessage = {
+        id: `msg-forward-${Date.now()}`,
+        text: `📎 Archivo reenviado: ${message.attachment.name}`,
+        timestamp: new Date().toISOString(),
+        senderId: currentUserId,
+        sender: { id: currentUserId, name: 'Usuario', avatar: null },
+        status: 'sent',
+        attachment: message.attachment,
+        isForwarded: true
+      };
+      
+      setMessages(prev => [...prev, forwardedMessage]);
+      
+      // Actualizar última conversación
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === selectedConversation.id 
+            ? { 
+                ...conv, 
+                lastMessage: {
+                  id: forwardedMessage.id,
+                  text: forwardedMessage.text,
+                  timestamp: forwardedMessage.timestamp,
+                  senderId: currentUserId
+                }
+              }
+            : conv
+        )
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -396,6 +485,8 @@ export const Chat = () => {
             onSendMessage={handleSendMessage}
             onBack={handleBack}
             onLoadMore={handleLoadMore}
+            onReaction={handleReaction}
+            onForward={handleForward}
           />
         </div>
       );
@@ -450,6 +541,8 @@ export const Chat = () => {
               onSendMessage={handleSendMessage}
               onBack={handleBack}
               onLoadMore={handleLoadMore}
+              onReaction={handleReaction}
+              onForward={handleForward}
             />
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 h-full flex items-center justify-center">

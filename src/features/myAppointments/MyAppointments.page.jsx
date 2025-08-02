@@ -9,7 +9,8 @@ import {
   AppointmentFilters,
   RescheduleModal,
   CancelDialog,
-  IcsButton
+  IcsButton,
+  DayDetailsModal
 } from './myAppointments.components';
 import { getMyAppointments, rescheduleAppointment, cancelAppointment } from './myAppointments.api';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +20,7 @@ import { addDays, subDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-
 const mockAppointments = [
   {
     id: '1',
-    date: '2024-01-15',
+    date: '2024-02-15',
     time: '10:00',
     status: 'confirmed',
     therapist: {
@@ -33,7 +34,7 @@ const mockAppointments = [
   },
   {
     id: '2',
-    date: '2024-01-18',
+    date: '2024-02-15',
     time: '15:30',
     status: 'pending',
     therapist: {
@@ -47,7 +48,7 @@ const mockAppointments = [
   },
   {
     id: '3',
-    date: '2024-01-22',
+    date: '2024-02-22',
     time: '11:00',
     status: 'confirmed',
     therapist: {
@@ -86,6 +87,48 @@ const mockAppointments = [
     },
     notes: 'Cancelada por conflicto de horario',
     location: 'Online'
+  },
+  {
+    id: '6',
+    date: '2024-02-20',
+    time: '09:00',
+    status: 'confirmed',
+    therapist: {
+      id: 'th4',
+      name: 'Dr. Roberto Silva',
+      specialty: 'Psicoterapia',
+      avatar: null
+    },
+    notes: 'Sesión de terapia grupal',
+    location: 'Presencial'
+  },
+  {
+    id: '7',
+    date: '2024-02-25',
+    time: '17:00',
+    status: 'pending',
+    therapist: {
+      id: 'th3',
+      name: 'Dra. Ana López',
+      specialty: 'Terapia Familiar',
+      avatar: null
+    },
+    notes: 'Consulta de seguimiento familiar',
+    location: 'Online'
+  },
+  {
+    id: '8',
+    date: '2024-03-01',
+    time: '12:00',
+    status: 'confirmed',
+    therapist: {
+      id: 'th1',
+      name: 'Dra. María González',
+      specialty: 'Psicología Clínica',
+      avatar: null
+    },
+    notes: 'Evaluación mensual',
+    location: 'Online'
   }
 ];
 
@@ -103,6 +146,8 @@ export const MyAppointments = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
+  const [showDayDetailsModal, setShowDayDetailsModal] = useState(false);
 
   // Cargar citas al montar el componente
   useEffect(() => {
@@ -160,6 +205,11 @@ export const MyAppointments = () => {
     // Filtrar por estado
     if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(apt => apt.status === filters.status);
+    }
+
+    // Filtrar por tipo de cita
+    if (filters.type && filters.type !== 'all') {
+      filtered = filtered.filter(apt => apt.location === filters.type);
     }
 
     // Filtrar por terapeuta
@@ -245,9 +295,13 @@ export const MyAppointments = () => {
     }
   };
 
-  const handleDateClick = (date) => {
+  const handleDateClick = (date, dayAppointments = []) => {
     setCurrentDate(date);
-    // Aquí podrías mostrar un modal con los detalles de las citas del día
+    if (dayAppointments.length > 0) {
+      // Mostrar detalles de las citas del día
+      setSelectedDayAppointments(dayAppointments);
+      setShowDayDetailsModal(true);
+    }
   };
 
   return (
@@ -358,6 +412,18 @@ export const MyAppointments = () => {
           setSelectedAppointment(null);
         }}
         onConfirm={handleCancelConfirm}
+      />
+
+      <DayDetailsModal
+        appointments={selectedDayAppointments}
+        isOpen={showDayDetailsModal}
+        onClose={() => {
+          setShowDayDetailsModal(false);
+          setSelectedDayAppointments([]);
+        }}
+        onReschedule={handleReschedule}
+        onCancel={handleCancel}
+        onChat={handleChat}
       />
     </div>
   );

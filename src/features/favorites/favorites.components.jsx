@@ -2,18 +2,28 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Loader } from '../../components/Loader';
+import { Modal } from '../../components/Modal';
 
-// Encabezado con título, búsqueda y ordenamiento
-export const FavoritesHeader = ({ onSearch, onSort, searchTerm, sortBy }) => {
+// Encabezado con título, búsqueda, filtros y ordenamiento
+export const FavoritesHeader = ({ onSearch, onSort, onCategoryFilter, searchTerm, sortBy, selectedCategory, categories = [] }) => {
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-deep">Mis Favoritos</h1>
-        <p className="text-gray-600 mt-2">Gestiona tus terapeutas favoritos</p>
+        <p className="text-gray-600 mt-2">Gestiona tus terapeutas favoritos y configura alertas personalizadas</p>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <SearchBar onSearch={onSearch} searchTerm={searchTerm} />
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <SearchBar onSearch={onSearch} searchTerm={searchTerm} />
+          {categories.length > 0 && (
+            <CategoryFilter 
+              onCategoryFilter={onCategoryFilter} 
+              selectedCategory={selectedCategory}
+              categories={categories}
+            />
+          )}
+        </div>
         <SortSelect onSort={onSort} sortBy={sortBy} />
       </div>
     </div>
@@ -41,7 +51,7 @@ export const SearchBar = ({ onSearch, searchTerm }) => {
   );
 };
 
-// Selector de ordenamiento
+// Selector de ordenamiento mejorado
 export const SortSelect = ({ onSort, sortBy }) => {
   return (
     <select
@@ -51,9 +61,10 @@ export const SortSelect = ({ onSort, sortBy }) => {
       aria-label="Ordenar favoritos"
     >
       <option value="name">Ordenar por nombre</option>
-      <option value="rating">Ordenar por rating</option>
+      <option value="rating">Ordenar por valoración</option>
       <option value="price">Ordenar por precio</option>
       <option value="dateAdded">Fecha agregado</option>
+      <option value="category">Agrupar por categoría</option>
     </select>
   );
 };
@@ -85,6 +96,19 @@ export const FavoritesList = ({ favorites = [], loading = false, onRemove, onTog
       ))}
     </div>
   );
+};
+
+// Función auxiliar para obtener etiquetas de categorías
+const getCategoryLabel = (category) => {
+  const labels = {
+    individual: 'Individual',
+    couple: 'Pareja',
+    family: 'Familiar',
+    group: 'Grupal',
+    child: 'Infantil',
+    adolescent: 'Adolescente'
+  };
+  return labels[category] || 'Otros';
 };
 
 // Tarjeta individual de terapeuta favorito
@@ -149,23 +173,30 @@ export const FavoriteCard = ({ therapist, onRemove, onToggleAlerts, onViewProfil
             <h3 className="font-semibold text-deep text-lg truncate">{therapist.name}</h3>
             <p className="text-gray-600 text-sm">{therapist.specialty}</p>
             
-            {/* Rating */}
-            <div className="flex items-center mt-1">
+            {/* Rating y categoría */}
+            <div className="flex items-center justify-between mt-1">
               <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.floor(therapist.rating) ? 'text-yellow-400' : 'text-gray-300'
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-                <span className="ml-1 text-sm text-gray-600">({therapist.rating})</span>
+                <div className="flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(therapist.rating) ? 'text-yellow-400' : 'text-gray-300'
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                  <span className="ml-1 text-sm text-gray-600">
+                    {therapist.rating} ({therapist.totalReviews || 0} reseñas)
+                  </span>
+                </div>
               </div>
+              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                {getCategoryLabel(therapist.category || 'individual')}
+              </span>
             </div>
             
             {/* Precio */}
@@ -209,7 +240,7 @@ export const FavoriteCard = ({ therapist, onRemove, onToggleAlerts, onViewProfil
   );
 };
 
-// Panel de configuración de alertas
+// Panel de configuración de alertas mejorado
 export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
   const handleFrequencyChange = (frequency) => {
     onUpdateSettings({ ...alertSettings, frequency });
@@ -225,10 +256,82 @@ export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
     });
   };
 
+  const handleAlertTypeChange = (alertType, enabled) => {
+    onUpdateSettings({
+      ...alertSettings,
+      alertTypes: {
+        ...alertSettings.alertTypes,
+        [alertType]: enabled
+      }
+    });
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-deep mb-4">Configuración de Alertas</h3>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-deep mb-2">Configuración de Alertas</h3>
+          <p className="text-sm text-gray-600">
+            Personaliza cómo y cuándo quieres recibir notificaciones sobre tus terapeutas favoritos
+          </p>
+        </div>
+        
+        {/* Tipos de alertas */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Tipos de alertas
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-start">
+              <input
+                type="checkbox"
+                checked={alertSettings.alertTypes?.availability || true}
+                onChange={(e) => handleAlertTypeChange('availability', e.target.checked)}
+                className="mr-3 mt-0.5 text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-sm font-medium">Disponibilidad de citas</span>
+                <p className="text-xs text-gray-500">Te notificaremos cuando haya nuevas citas disponibles</p>
+              </div>
+            </label>
+            <label className="flex items-start">
+              <input
+                type="checkbox"
+                checked={alertSettings.alertTypes?.messages || true}
+                onChange={(e) => handleAlertTypeChange('messages', e.target.checked)}
+                className="mr-3 mt-0.5 text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-sm font-medium">Nuevos mensajes</span>
+                <p className="text-xs text-gray-500">Recibe alertas cuando un terapeuta te envíe un mensaje</p>
+              </div>
+            </label>
+            <label className="flex items-start">
+              <input
+                type="checkbox"
+                checked={alertSettings.alertTypes?.priceChanges || false}
+                onChange={(e) => handleAlertTypeChange('priceChanges', e.target.checked)}
+                className="mr-3 mt-0.5 text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-sm font-medium">Cambios de precio</span>
+                <p className="text-xs text-gray-500">Te avisaremos si hay cambios en las tarifas</p>
+              </div>
+            </label>
+            <label className="flex items-start">
+              <input
+                type="checkbox"
+                checked={alertSettings.alertTypes?.reminders || true}
+                onChange={(e) => handleAlertTypeChange('reminders', e.target.checked)}
+                className="mr-3 mt-0.5 text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-sm font-medium">Recordatorios de citas</span>
+                <p className="text-xs text-gray-500">Recordatorios antes de tus sesiones programadas</p>
+              </div>
+            </label>
+          </div>
+        </div>
         
         {/* Frecuencia */}
         <div className="mb-6">
@@ -245,7 +348,10 @@ export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
                 onChange={() => handleFrequencyChange('immediate')}
                 className="mr-2 text-primary focus:ring-primary"
               />
-              <span className="text-sm">Inmediato</span>
+              <div>
+                <span className="text-sm font-medium">Inmediato</span>
+                <p className="text-xs text-gray-500">Recibe notificaciones al instante</p>
+              </div>
             </label>
             <label className="flex items-center">
               <input
@@ -256,7 +362,24 @@ export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
                 onChange={() => handleFrequencyChange('daily')}
                 className="mr-2 text-primary focus:ring-primary"
               />
-              <span className="text-sm">Resumen diario</span>
+              <div>
+                <span className="text-sm font-medium">Resumen diario</span>
+                <p className="text-xs text-gray-500">Un resumen diario a las 9:00 AM</p>
+              </div>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="frequency"
+                value="weekly"
+                checked={alertSettings.frequency === 'weekly'}
+                onChange={() => handleFrequencyChange('weekly')}
+                className="mr-2 text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-sm font-medium">Resumen semanal</span>
+                <p className="text-xs text-gray-500">Un resumen cada lunes por la mañana</p>
+              </div>
             </label>
           </div>
         </div>
@@ -274,7 +397,10 @@ export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
                 onChange={(e) => handleChannelChange('email', e.target.checked)}
                 className="mr-2 text-primary focus:ring-primary"
               />
-              <span className="text-sm">Email</span>
+              <div>
+                <span className="text-sm font-medium">Email</span>
+                <p className="text-xs text-gray-500">Notificaciones por correo electrónico</p>
+              </div>
             </label>
             <label className="flex items-center">
               <input
@@ -283,7 +409,22 @@ export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
                 onChange={(e) => handleChannelChange('push', e.target.checked)}
                 className="mr-2 text-primary focus:ring-primary"
               />
-              <span className="text-sm">Notificaciones push</span>
+              <div>
+                <span className="text-sm font-medium">Notificaciones push</span>
+                <p className="text-xs text-gray-500">Notificaciones en el navegador y móvil</p>
+              </div>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={alertSettings.channels.sms || false}
+                onChange={(e) => handleChannelChange('sms', e.target.checked)}
+                className="mr-2 text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-sm font-medium">SMS</span>
+                <p className="text-xs text-gray-500">Mensajes de texto para alertas urgentes</p>
+              </div>
             </label>
           </div>
         </div>
@@ -292,7 +433,7 @@ export const AlertsPanel = ({ alertSettings, onUpdateSettings }) => {
   );
 };
 
-// Estado vacío
+// Estado vacío mejorado
 export const EmptyState = () => {
   return (
     <Card>
@@ -315,23 +456,119 @@ export const EmptyState = () => {
         </div>
         
         <h3 className="text-xl font-semibold text-deep mb-2">
-          Aún no tienes terapeutas guardados
+          Tu lista de favoritos está vacía
         </h3>
-        <p className="text-gray-600 mb-6 max-w-md mx-auto">
-          Explora nuestro directorio de terapeutas y guarda tus favoritos para acceder rápidamente a ellos.
-        </p>
+        <div className="text-gray-600 mb-6 max-w-lg mx-auto space-y-3">
+          <p>
+            Aún no has guardado ningún terapeuta en tu lista de favoritos.
+          </p>
+          <div className="text-sm bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">💡 ¿Sabías que puedes?</h4>
+            <ul className="text-left space-y-1 text-blue-800">
+              <li>• Guardar terapeutas para acceso rápido</li>
+              <li>• Configurar alertas de disponibilidad</li>
+              <li>• Organizar por categorías (individual, pareja, etc.)</li>
+              <li>• Comparar valoraciones y precios</li>
+            </ul>
+          </div>
+        </div>
         
-        <Button
-          onClick={() => window.location.href = '/explore-therapists'}
-          className="inline-flex items-center"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          Explorar Terapeutas
-        </Button>
+        <div className="space-y-3">
+          <Button
+            onClick={() => window.location.href = '/explore-therapists'}
+            className="inline-flex items-center"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Explorar Terapeutas
+          </Button>
+          <p className="text-xs text-gray-500">
+            Encuentra el terapeuta ideal y agrégalo a favoritos con un clic
+          </p>
+        </div>
       </CardContent>
     </Card>
+  );
+};
+
+// Filtro por categorías
+export const CategoryFilter = ({ onCategoryFilter, selectedCategory, categories }) => {
+  return (
+    <select
+      value={selectedCategory || ''}
+      onChange={(e) => onCategoryFilter(e.target.value)}
+      className="px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+      aria-label="Filtrar por categoría"
+    >
+      <option value="">Todas las categorías</option>
+      {categories.map((category) => (
+        <option key={category.value} value={category.value}>
+          {category.label} ({category.count})
+        </option>
+      ))}
+    </select>
+  );
+};
+
+// Modal de información de alertas
+export const AlertsInfoModal = ({ isOpen, onClose }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Información sobre Alertas">
+      <div className="space-y-4">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">🔔 ¿Qué son las alertas?</h4>
+          <p className="text-sm text-blue-800">
+            Las alertas te mantienen informado sobre cambios importantes relacionados con tus terapeutas favoritos.
+          </p>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="border-l-4 border-green-400 pl-4">
+            <h5 className="font-medium text-gray-900">Disponibilidad de citas</h5>
+            <p className="text-sm text-gray-600">
+              Te notificamos cuando un terapeuta favorito tenga nuevas citas disponibles que coincidan con tus preferencias.
+            </p>
+          </div>
+          
+          <div className="border-l-4 border-blue-400 pl-4">
+            <h5 className="font-medium text-gray-900">Nuevos mensajes</h5>
+            <p className="text-sm text-gray-600">
+              Recibe alertas inmediatas cuando un terapeuta te envíe un mensaje directo.
+            </p>
+          </div>
+          
+          <div className="border-l-4 border-yellow-400 pl-4">
+            <h5 className="font-medium text-gray-900">Cambios de precio</h5>
+            <p className="text-sm text-gray-600">
+              Te avisamos si hay modificaciones en las tarifas de tus terapeutas favoritos.
+            </p>
+          </div>
+          
+          <div className="border-l-4 border-purple-400 pl-4">
+            <h5 className="font-medium text-gray-900">Recordatorios</h5>
+            <p className="text-sm text-gray-600">
+              Recordatorios automáticos antes de tus citas programadas (24h, 2h y 30min antes).
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h4 className="font-medium text-gray-900 mb-2">📱 Canales disponibles</h4>
+          <ul className="text-sm text-gray-600 space-y-1">
+            <li>• <strong>Email:</strong> Notificaciones detalladas en tu correo</li>
+            <li>• <strong>Push:</strong> Alertas instantáneas en navegador y móvil</li>
+            <li>• <strong>SMS:</strong> Mensajes de texto para alertas urgentes</li>
+          </ul>
+        </div>
+        
+        <div className="flex justify-end pt-4">
+          <Button onClick={onClose} variant="secondary">
+            Entendido
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 };
 

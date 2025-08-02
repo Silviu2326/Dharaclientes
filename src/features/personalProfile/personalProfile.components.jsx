@@ -22,7 +22,14 @@ import {
   ClockIcon,
   HeartIcon,
   BookOpenIcon,
-  FireIcon
+  FireIcon,
+  LockClosedIcon,
+  ShieldCheckIcon,
+  TrashIcon,
+  BellIcon,
+  GlobeAltIcon,
+  EyeIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
 // Schema de validación con Zod
@@ -171,6 +178,7 @@ export const BasicInfoForm = ({ user, isEditing, onSave }) => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(profileSchema),
@@ -183,6 +191,20 @@ export const BasicInfoForm = ({ user, isEditing, onSave }) => {
       gender: user?.gender || ''
     }
   });
+
+  // Actualizar valores cuando cambie el usuario
+  React.useEffect(() => {
+    if (user) {
+      reset({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        birthDate: user.birthDate || '',
+        gender: user.gender || ''
+      });
+    }
+  }, [user, reset]);
   
   const genderOptions = [
     { value: '', label: 'Seleccionar género' },
@@ -297,6 +319,19 @@ export const BasicInfoForm = ({ user, isEditing, onSave }) => {
               )}
             </div>
           </div>
+          
+          {isEditing && (
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+              <Button
+                type="submit"
+                variant="primary"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+              >
+                Guardar cambios
+              </Button>
+            </div>
+          )}
         </form>
        </CardContent>
      </Card>
@@ -304,47 +339,65 @@ export const BasicInfoForm = ({ user, isEditing, onSave }) => {
  };
 
 // Componente de métricas de uso
-export const UsageMetrics = ({ metrics }) => {
+export const UsageMetrics = ({ metrics, onViewDetails }) => {
   const metricsData = [
     {
       icon: ClockIcon,
       label: 'Sesiones totales',
       value: metrics?.totalSessions || 0,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
+      bgColor: 'bg-blue-50',
+      detailType: 'sessions'
     },
     {
       icon: BookOpenIcon,
       label: 'Horas totales',
       value: `${metrics?.totalHours || 0}h`,
       color: 'text-green-600',
-      bgColor: 'bg-green-50'
+      bgColor: 'bg-green-50',
+      detailType: 'hours'
     },
     {
       icon: HeartIcon,
       label: 'Terapeutas favoritos',
       value: metrics?.favoriteTherapists || 0,
       color: 'text-pink-600',
-      bgColor: 'bg-pink-50'
+      bgColor: 'bg-pink-50',
+      detailType: 'therapists'
     },
     {
       icon: FireIcon,
       label: 'Días consecutivos',
       value: metrics?.consecutiveDays || 0,
       color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
+      bgColor: 'bg-orange-50',
+      detailType: 'streak'
     }
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Métricas de Uso</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          Métricas de Uso
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => onViewDetails?.('all')}
+            className="text-sm"
+          >
+            Ver detalles
+          </Button>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {metricsData.map((metric, index) => (
-            <MetricCard key={index} {...metric} />
+            <MetricCard 
+              key={index} 
+              {...metric} 
+              onClick={() => onViewDetails?.(metric.detailType)}
+            />
           ))}
         </div>
       </CardContent>
@@ -353,15 +406,21 @@ export const UsageMetrics = ({ metrics }) => {
 };
 
 // Tarjeta individual de métrica
-export const MetricCard = ({ icon: Icon, label, value, color, bgColor }) => {
+export const MetricCard = ({ icon: Icon, label, value, color, bgColor, onClick }) => {
   return (
-    <div className={`${bgColor} rounded-lg p-4 text-center`}>
-      <div className={`${color} mb-2 flex justify-center`}>
+    <button
+      onClick={onClick}
+      className={`${bgColor} rounded-lg p-4 text-center hover:shadow-md transition-shadow duration-200 w-full group`}
+    >
+      <div className={`${color} mb-2 flex justify-center group-hover:scale-110 transition-transform duration-200`}>
         <Icon className="w-6 h-6" />
       </div>
       <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
-      <div className="text-sm text-gray-600">{label}</div>
-    </div>
+      <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+        {label}
+        <ChevronRightIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+      </div>
+    </button>
   );
 };
 
@@ -369,6 +428,12 @@ export const MetricCard = ({ icon: Icon, label, value, color, bgColor }) => {
 export const PreferencesPanel = ({ preferences, onUpdatePreferences }) => {
   const [isDarkMode, setIsDarkMode] = useState(preferences?.theme === 'dark');
   const [language, setLanguage] = useState(preferences?.language || 'es');
+  const [timezone, setTimezone] = useState(preferences?.timezone || 'Europe/Madrid');
+  const [notifications, setNotifications] = useState(preferences?.notifications || {
+    email: true,
+    push: true,
+    sms: false
+  });
 
   const handleThemeToggle = () => {
     const newTheme = !isDarkMode;
@@ -384,6 +449,26 @@ export const PreferencesPanel = ({ preferences, onUpdatePreferences }) => {
     onUpdatePreferences({
       ...preferences,
       language: newLanguage
+    });
+  };
+
+  const handleTimezoneChange = (newTimezone) => {
+    setTimezone(newTimezone);
+    onUpdatePreferences({
+      ...preferences,
+      timezone: newTimezone
+    });
+  };
+
+  const handleNotificationChange = (type, value) => {
+    const newNotifications = {
+      ...notifications,
+      [type]: value
+    };
+    setNotifications(newNotifications);
+    onUpdatePreferences({
+      ...preferences,
+      notifications: newNotifications
     });
   };
 
@@ -404,6 +489,16 @@ export const PreferencesPanel = ({ preferences, onUpdatePreferences }) => {
         <LanguageSelect 
           value={language}
           onChange={handleLanguageChange}
+        />
+        
+        <TimezoneSelect 
+          value={timezone}
+          onChange={handleTimezoneChange}
+        />
+        
+        <NotificationSettings 
+          notifications={notifications}
+          onChange={handleNotificationChange}
         />
       </CardContent>
     </Card>
@@ -552,6 +647,153 @@ export const LoadingState = () => {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+};
+
+// Selector de zona horaria
+export const TimezoneSelect = ({ value, onChange }) => {
+  const timezoneOptions = [
+    { value: 'Europe/Madrid', label: 'Madrid (GMT+1)' },
+    { value: 'Europe/London', label: 'Londres (GMT+0)' },
+    { value: 'America/New_York', label: 'Nueva York (GMT-5)' },
+    { value: 'America/Los_Angeles', label: 'Los Ángeles (GMT-8)' },
+    { value: 'America/Mexico_City', label: 'Ciudad de México (GMT-6)' },
+    { value: 'America/Buenos_Aires', label: 'Buenos Aires (GMT-3)' }
+  ];
+
+  return (
+    <div>
+      <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+        <GlobeAltIcon className="w-4 h-4" />
+        Zona horaria
+      </label>
+      <Select
+        id="timezone"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        options={timezoneOptions}
+        className="w-full"
+      />
+    </div>
+  );
+};
+
+// Configuración de notificaciones
+export const NotificationSettings = ({ notifications, onChange }) => {
+  const notificationTypes = [
+    {
+      key: 'email',
+      label: 'Notificaciones por email',
+      description: 'Recibir recordatorios y actualizaciones por correo'
+    },
+    {
+      key: 'push',
+      label: 'Notificaciones push',
+      description: 'Notificaciones en tiempo real en el navegador'
+    },
+    {
+      key: 'sms',
+      label: 'Notificaciones SMS',
+      description: 'Mensajes de texto para citas importantes'
+    }
+  ];
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+        <BellIcon className="w-4 h-4" />
+        Notificaciones
+      </label>
+      <div className="space-y-4">
+        {notificationTypes.map((type) => (
+          <div key={type.key} className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="font-medium text-sm">{type.label}</div>
+              <div className="text-xs text-gray-500">{type.description}</div>
+            </div>
+            <button
+              onClick={() => onChange(type.key, !notifications[type.key])}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sage focus:ring-offset-2 ${
+                notifications[type.key] ? 'bg-sage' : 'bg-gray-200'
+              }`}
+              role="switch"
+              aria-checked={notifications[type.key]}
+            >
+              <span
+                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                  notifications[type.key] ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Panel de seguridad
+export const SecurityPanel = ({ onChangePassword, onEnable2FA, onDeleteAccount }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldCheckIcon className="w-5 h-5" />
+          Seguridad
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <SecurityOption
+          icon={LockClosedIcon}
+          title="Cambiar contraseña"
+          description="Actualiza tu contraseña para mantener tu cuenta segura"
+          action="Cambiar"
+          onClick={onChangePassword}
+        />
+        
+        <SecurityOption
+          icon={ShieldCheckIcon}
+          title="Autenticación en dos pasos"
+          description="Añade una capa extra de seguridad a tu cuenta"
+          action="Activar"
+          onClick={onEnable2FA}
+        />
+        
+        <SecurityOption
+          icon={TrashIcon}
+          title="Eliminar cuenta"
+          description="Elimina permanentemente tu cuenta y todos tus datos"
+          action="Eliminar"
+          onClick={onDeleteAccount}
+          variant="danger"
+        />
+      </CardContent>
+    </Card>
+  );
+};
+
+// Opción de seguridad individual
+export const SecurityOption = ({ icon: Icon, title, description, action, onClick, variant = 'default' }) => {
+  const buttonVariant = variant === 'danger' ? 'destructive' : 'secondary';
+  const iconColor = variant === 'danger' ? 'text-red-600' : 'text-gray-600';
+  
+  return (
+    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+      <div className="flex items-start gap-3">
+        <Icon className={`w-5 h-5 mt-0.5 ${iconColor}`} />
+        <div>
+          <h4 className="font-medium text-gray-900">{title}</h4>
+          <p className="text-sm text-gray-600">{description}</p>
+        </div>
+      </div>
+      <Button
+        variant={buttonVariant}
+        size="sm"
+        onClick={onClick}
+      >
+        {action}
+      </Button>
     </div>
   );
 };

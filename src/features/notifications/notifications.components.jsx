@@ -23,8 +23,21 @@ import {
   CogIcon,
   ChatBubbleLeftIcon,
   CalendarIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  ArchiveBoxIcon,
+  HeartIcon,
+  ExclamationCircleIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
+import {
+  CalendarIcon as CalendarSolidIcon,
+  ChatBubbleLeftIcon as ChatSolidIcon,
+  CurrencyEuroIcon as CurrencySolidIcon,
+  CogIcon as CogSolidIcon,
+  UserIcon as UserSolidIcon,
+  DocumentTextIcon as DocumentSolidIcon,
+  HeartIcon as HeartSolidIcon
+} from '@heroicons/react/24/solid';
 
 // Componente de encabezado con estadísticas
 export function NotificationsHeader({ stats, onMarkAllRead, onDeleteAllRead, loading }) {
@@ -293,8 +306,8 @@ export function SearchBar({ value, onChange, placeholder }) {
   );
 }
 
-// Tabla de notificaciones (desktop)
-export function NotificationsTable({ notifications, onView, onMarkAsRead, onDelete, loading }) {
+// Tabla de notificaciones
+export function NotificationsTable({ notifications, onView, onMarkAsRead, onDelete, onArchive, loading }) {
   return (
     <div className="hidden md:block">
       <Card>
@@ -330,6 +343,7 @@ export function NotificationsTable({ notifications, onView, onMarkAsRead, onDele
                   onView={onView}
                   onMarkAsRead={onMarkAsRead}
                   onDelete={onDelete}
+                  onArchive={onArchive}
                   loading={loading}
                 />
               ))}
@@ -342,44 +356,73 @@ export function NotificationsTable({ notifications, onView, onMarkAsRead, onDele
 }
 
 // Fila de notificación
-export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, loading }) {
+export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, onArchive, loading }) {
   const getTypeIcon = (type) => {
     const icons = {
-      appointment: CalendarIcon,
-      message: ChatBubbleLeftIcon,
-      payment: CurrencyEuroIcon,
-      system: CogIcon,
-      session: UserIcon,
-      evaluation: DocumentTextIcon
+      appointment: CalendarSolidIcon,
+      message: ChatSolidIcon,
+      payment: CurrencySolidIcon,
+      system: CogSolidIcon,
+      session: UserSolidIcon,
+      evaluation: DocumentSolidIcon,
+      reminder: BellIcon,
+      promotion: HeartSolidIcon
     };
     return icons[type] || BellIcon;
   };
 
+  const getTypeColor = (type) => {
+    const colors = {
+      appointment: 'text-blue-600',
+      message: 'text-green-600',
+      payment: 'text-yellow-600',
+      system: 'text-gray-600',
+      session: 'text-purple-600',
+      evaluation: 'text-indigo-600',
+      reminder: 'text-orange-600',
+      promotion: 'text-pink-600'
+    };
+    return colors[type] || 'text-gray-400';
+  };
+
   const getPriorityColor = (priority) => {
     const colors = {
-      high: 'bg-red-100 text-red-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      low: 'bg-green-100 text-green-800'
+      high: 'bg-red-100 text-red-800 border-red-200',
+      medium: 'bg-amber-100 text-amber-800 border-amber-200',
+      low: 'bg-emerald-100 text-emerald-800 border-emerald-200'
     };
-    return colors[priority] || 'bg-gray-100 text-gray-800';
+    return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getPriorityIcon = (priority) => {
+    const icons = {
+      high: ExclamationCircleIcon,
+      medium: ExclamationTriangleIcon,
+      low: InformationCircleIcon
+    };
+    return icons[priority] || InformationCircleIcon;
   };
 
   const TypeIcon = getTypeIcon(notification.type);
+  const PriorityIcon = getPriorityIcon(notification.priority);
 
   return (
-    <tr className={`hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}>
+    <tr className={`hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50 border-l-4 border-blue-400' : ''}`}>
       <td className="px-6 py-4">
         <div className="flex items-start space-x-3">
-          <TypeIcon className="h-5 w-5 text-gray-400 mt-1" />
+          <div className="flex-shrink-0">
+            <TypeIcon className={`h-5 w-5 mt-1 ${getTypeColor(notification.type)}`} />
+          </div>
           <div className="flex-1 min-w-0">
             <p className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}>
               {notification.title}
             </p>
-            <p className="text-sm text-gray-500 truncate">
+            <p className="text-sm text-gray-500 line-clamp-2">
               {notification.message}
             </p>
             {notification.therapist && (
               <p className="text-xs text-gray-400 mt-1">
+                <UserIcon className="h-3 w-3 inline mr-1" />
                 {notification.therapist}
               </p>
             )}
@@ -387,13 +430,30 @@ export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, 
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className="text-sm text-gray-900 capitalize">
-          {notification.type}
-        </span>
+        <div className="flex items-center space-x-2">
+          <TypeIcon className={`h-4 w-4 ${getTypeColor(notification.type)}`} />
+          <span className="text-sm text-gray-900 capitalize">
+            {notification.type === 'appointment' ? 'Cita' :
+             notification.type === 'message' ? 'Mensaje' :
+             notification.type === 'payment' ? 'Pago' :
+             notification.type === 'system' ? 'Sistema' :
+             notification.type === 'session' ? 'Sesión' :
+             notification.type === 'evaluation' ? 'Evaluación' :
+             notification.type === 'reminder' ? 'Recordatorio' :
+             notification.type === 'promotion' ? 'Promoción' :
+             notification.type}
+          </span>
+        </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <Badge className={getPriorityColor(notification.priority)}>
-          {notification.priority}
+        <Badge className={`${getPriorityColor(notification.priority)} flex items-center space-x-1`}>
+          <PriorityIcon className="h-3 w-3" />
+          <span>
+            {notification.priority === 'high' ? 'Alta' :
+             notification.priority === 'medium' ? 'Media' :
+             notification.priority === 'low' ? 'Baja' :
+             notification.priority}
+          </span>
         </Badge>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -411,12 +471,13 @@ export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, 
         </Badge>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <div className="flex items-center justify-end space-x-2">
+        <div className="flex items-center justify-end space-x-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onView(notification)}
-            className="text-blue-600 hover:text-blue-700"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            title="Ver detalle"
           >
             <EyeIcon className="h-4 w-4" />
           </Button>
@@ -426,7 +487,8 @@ export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, 
               size="sm"
               onClick={() => onMarkAsRead(notification.id)}
               disabled={loading}
-              className="text-green-600 hover:text-green-700"
+              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+              title="Marcar como leída"
             >
               <CheckCircleIcon className="h-4 w-4" />
             </Button>
@@ -434,9 +496,20 @@ export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, 
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => onArchive && onArchive(notification.id)}
+            disabled={loading}
+            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            title="Archivar"
+          >
+            <ArchiveBoxIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onDelete(notification.id)}
             disabled={loading}
-            className="text-red-600 hover:text-red-700"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Eliminar"
           >
             <TrashIcon className="h-4 w-4" />
           </Button>
@@ -447,106 +520,166 @@ export function NotificationRow({ notification, onView, onMarkAsRead, onDelete, 
 }
 
 // Tarjeta de notificación (móvil)
-export function NotificationCard({ notification, onView, onMarkAsRead, onDelete, loading }) {
+export function NotificationCard({ notification, onView, onMarkAsRead, onDelete, onArchive, loading }) {
   const getTypeIcon = (type) => {
     const icons = {
-      appointment: CalendarIcon,
-      message: ChatBubbleLeftIcon,
-      payment: CurrencyEuroIcon,
-      system: CogIcon,
-      session: UserIcon,
-      evaluation: DocumentTextIcon
+      appointment: CalendarSolidIcon,
+      message: ChatSolidIcon,
+      payment: CurrencySolidIcon,
+      system: CogSolidIcon,
+      session: UserSolidIcon,
+      evaluation: DocumentSolidIcon,
+      reminder: BellIcon,
+      promotion: HeartSolidIcon
     };
     return icons[type] || BellIcon;
   };
 
+  const getTypeColor = (type) => {
+    const colors = {
+      appointment: 'text-blue-600',
+      message: 'text-green-600',
+      payment: 'text-yellow-600',
+      system: 'text-gray-600',
+      session: 'text-purple-600',
+      evaluation: 'text-indigo-600',
+      reminder: 'text-orange-600',
+      promotion: 'text-pink-600'
+    };
+    return colors[type] || 'text-gray-400';
+  };
+
   const getPriorityColor = (priority) => {
     const colors = {
-      high: 'bg-red-100 text-red-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      low: 'bg-green-100 text-green-800'
+      high: 'bg-red-100 text-red-800 border-red-200',
+      medium: 'bg-amber-100 text-amber-800 border-amber-200',
+      low: 'bg-emerald-100 text-emerald-800 border-emerald-200'
     };
-    return colors[priority] || 'bg-gray-100 text-gray-800';
+    return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getPriorityIcon = (priority) => {
+    const icons = {
+      high: ExclamationCircleIcon,
+      medium: ExclamationTriangleIcon,
+      low: InformationCircleIcon
+    };
+    return icons[priority] || InformationCircleIcon;
   };
 
   const TypeIcon = getTypeIcon(notification.type);
+  const PriorityIcon = getPriorityIcon(notification.priority);
 
   return (
-    <Card className={`p-4 ${!notification.read ? 'border-blue-300 bg-blue-50' : ''}`}>
+    <Card className={`p-4 transition-all hover:shadow-md ${!notification.read ? 'border-l-4 border-blue-400 bg-blue-50' : 'hover:bg-gray-50'}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start space-x-3 flex-1">
-          <TypeIcon className="h-5 w-5 text-gray-400 mt-1" />
+          <div className="flex-shrink-0">
+            <TypeIcon className={`h-6 w-6 mt-1 ${getTypeColor(notification.type)}`} />
+          </div>
           <div className="flex-1 min-w-0">
-            <h3 className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}>
+            <h3 className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''} break-words`}>
               {notification.title}
             </h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-600 mt-1 break-words leading-relaxed">
               {notification.message}
             </p>
             {notification.therapist && (
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-gray-400 mt-2 flex items-center">
+                <UserIcon className="h-3 w-3 mr-1" />
                 {notification.therapist}
               </p>
             )}
+            <div className="flex items-center space-x-2 mt-2">
+              <span className="text-xs text-gray-500 flex items-center">
+                <ClockIcon className="h-3 w-3 mr-1" />
+                {new Date(notification.createdAt).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+              <span className="text-xs text-gray-400">•</span>
+              <span className="text-xs text-gray-500 capitalize">
+                {notification.type === 'appointment' ? 'Cita' :
+                 notification.type === 'message' ? 'Mensaje' :
+                 notification.type === 'payment' ? 'Pago' :
+                 notification.type === 'system' ? 'Sistema' :
+                 notification.type === 'session' ? 'Sesión' :
+                 notification.type === 'evaluation' ? 'Evaluación' :
+                 notification.type === 'reminder' ? 'Recordatorio' :
+                 notification.type === 'promotion' ? 'Promoción' :
+                 notification.type}
+              </span>
+            </div>
           </div>
         </div>
-        <Badge className={getPriorityColor(notification.priority)}>
-          {notification.priority}
-        </Badge>
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <span className="text-xs text-gray-500">
-            {new Date(notification.createdAt).toLocaleDateString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </span>
+        <div className="flex flex-col items-end space-y-2">
+          <Badge className={`${getPriorityColor(notification.priority)} flex items-center space-x-1`}>
+            <PriorityIcon className="h-3 w-3" />
+            <span>
+              {notification.priority === 'high' ? 'Alta' :
+               notification.priority === 'medium' ? 'Media' :
+               notification.priority === 'low' ? 'Baja' :
+               notification.priority}
+            </span>
+          </Badge>
           <Badge className={notification.read ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
             {notification.read ? 'Leída' : 'Sin leer'}
           </Badge>
         </div>
-        
-        <div className="flex items-center space-x-2">
+      </div>
+      
+      <div className="flex items-center justify-end space-x-1 pt-2 border-t border-gray-100">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onView(notification)}
+          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          title="Ver detalle"
+        >
+          <EyeIcon className="h-4 w-4" />
+        </Button>
+        {!notification.read && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onView(notification)}
-            className="text-blue-600 hover:text-blue-700"
-          >
-            <EyeIcon className="h-4 w-4" />
-          </Button>
-          {!notification.read && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onMarkAsRead(notification.id)}
-              disabled={loading}
-              className="text-green-600 hover:text-green-700"
-            >
-              <CheckCircleIcon className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(notification.id)}
+            onClick={() => onMarkAsRead(notification.id)}
             disabled={loading}
-            className="text-red-600 hover:text-red-700"
+            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+            title="Marcar como leída"
           >
-            <TrashIcon className="h-4 w-4" />
+            <CheckCircleIcon className="h-4 w-4" />
           </Button>
-        </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onArchive && onArchive(notification.id)}
+          disabled={loading}
+          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+          title="Archivar"
+        >
+          <ArchiveBoxIcon className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDelete(notification.id)}
+          disabled={loading}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          title="Eliminar"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
       </div>
     </Card>
   );
 }
 
 // Lista de tarjetas de notificaciones
-export function NotificationCardsList({ notifications, onView, onMarkAsRead, onDelete, loading }) {
+export function NotificationCardsList({ notifications, onView, onMarkAsRead, onDelete, onArchive, loading }) {
   return (
     <div className="md:hidden space-y-4">
       {notifications.map((notification) => (
@@ -556,6 +689,7 @@ export function NotificationCardsList({ notifications, onView, onMarkAsRead, onD
           onView={onView}
           onMarkAsRead={onMarkAsRead}
           onDelete={onDelete}
+          onArchive={onArchive}
           loading={loading}
         />
       ))}
@@ -564,31 +698,57 @@ export function NotificationCardsList({ notifications, onView, onMarkAsRead, onD
 }
 
 // Modal de detalle de notificación
-export function NotificationDetailModal({ notification, isOpen, onClose, onMarkAsRead, onDelete, loading }) {
+export function NotificationDetailModal({ notification, isOpen, onClose, onMarkAsRead, onDelete, onArchive, loading }) {
   if (!notification) return null;
 
   const getTypeIcon = (type) => {
     const icons = {
-      appointment: CalendarIcon,
-      message: ChatBubbleLeftIcon,
-      payment: CurrencyEuroIcon,
-      system: CogIcon,
-      session: UserIcon,
-      evaluation: DocumentTextIcon
+      appointment: CalendarSolidIcon,
+      message: ChatSolidIcon,
+      payment: CurrencySolidIcon,
+      system: CogSolidIcon,
+      session: UserSolidIcon,
+      evaluation: DocumentSolidIcon,
+      reminder: BellIcon,
+      promotion: HeartSolidIcon
     };
     return icons[type] || BellIcon;
   };
 
+  const getTypeColor = (type) => {
+    const colors = {
+      appointment: 'text-blue-600',
+      message: 'text-green-600',
+      payment: 'text-yellow-600',
+      system: 'text-gray-600',
+      session: 'text-purple-600',
+      evaluation: 'text-indigo-600',
+      reminder: 'text-orange-600',
+      promotion: 'text-pink-600'
+    };
+    return colors[type] || 'text-gray-400';
+  };
+
   const getPriorityColor = (priority) => {
     const colors = {
-      high: 'bg-red-100 text-red-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      low: 'bg-green-100 text-green-800'
+      high: 'bg-red-100 text-red-800 border-red-200',
+      medium: 'bg-amber-100 text-amber-800 border-amber-200',
+      low: 'bg-emerald-100 text-emerald-800 border-emerald-200'
     };
-    return colors[priority] || 'bg-gray-100 text-gray-800';
+    return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getPriorityIcon = (priority) => {
+    const icons = {
+      high: ExclamationCircleIcon,
+      medium: ExclamationTriangleIcon,
+      low: InformationCircleIcon
+    };
+    return icons[priority] || InformationCircleIcon;
   };
 
   const TypeIcon = getTypeIcon(notification.type);
+  const PriorityIcon = getPriorityIcon(notification.priority);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Detalle de notificación">
@@ -596,15 +756,21 @@ export function NotificationDetailModal({ notification, isOpen, onClose, onMarkA
         {/* Encabezado */}
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0">
-            <TypeIcon className="h-8 w-8 text-gray-400" />
+            <TypeIcon className={`h-8 w-8 ${getTypeColor(notification.type)}`} />
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-medium text-gray-900">
               {notification.title}
             </h3>
             <div className="flex items-center space-x-2 mt-2">
-              <Badge className={getPriorityColor(notification.priority)}>
-                Prioridad {notification.priority}
+              <Badge className={`${getPriorityColor(notification.priority)} flex items-center space-x-1`}>
+                <PriorityIcon className="h-3 w-3" />
+                <span>
+                  Prioridad {notification.priority === 'high' ? 'Alta' :
+                           notification.priority === 'medium' ? 'Media' :
+                           notification.priority === 'low' ? 'Baja' :
+                           notification.priority}
+                </span>
               </Badge>
               <Badge className={notification.read ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                 {notification.read ? 'Leída' : 'Sin leer'}
@@ -625,7 +791,20 @@ export function NotificationDetailModal({ notification, isOpen, onClose, onMarkA
             <dl className="space-y-2">
               <div>
                 <dt className="text-xs text-gray-500">Tipo</dt>
-                <dd className="text-sm text-gray-900 capitalize">{notification.type}</dd>
+                <dd className="text-sm text-gray-900 flex items-center space-x-2">
+                  <TypeIcon className={`h-4 w-4 ${getTypeColor(notification.type)}`} />
+                  <span>
+                    {notification.type === 'appointment' ? 'Cita' :
+                     notification.type === 'message' ? 'Mensaje' :
+                     notification.type === 'payment' ? 'Pago' :
+                     notification.type === 'system' ? 'Sistema' :
+                     notification.type === 'session' ? 'Sesión' :
+                     notification.type === 'evaluation' ? 'Evaluación' :
+                     notification.type === 'reminder' ? 'Recordatorio' :
+                     notification.type === 'promotion' ? 'Promoción' :
+                     notification.type}
+                  </span>
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Fecha</dt>
@@ -685,6 +864,18 @@ export function NotificationDetailModal({ notification, isOpen, onClose, onMarkA
               Marcar como leída
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={() => {
+              onArchive && onArchive(notification.id);
+              onClose();
+            }}
+            disabled={loading}
+            className="flex items-center gap-2 text-orange-600 hover:text-orange-700"
+          >
+            <ArchiveBoxIcon className="h-4 w-4" />
+            Archivar
+          </Button>
           <Button
             variant="outline"
             onClick={() => {

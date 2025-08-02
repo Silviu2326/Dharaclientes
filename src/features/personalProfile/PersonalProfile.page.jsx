@@ -5,6 +5,7 @@ import {
   BasicInfoForm,
   UsageMetrics,
   PreferencesPanel,
+  SecurityPanel,
   ErrorState,
   LoadingState
 } from './personalProfile.components';
@@ -14,7 +15,9 @@ import {
   getUserMetrics,
   getUserPreferences,
   updateUserPreferences,
-  sendEmailVerification
+  sendEmailVerification,
+  changePassword,
+  deleteAccount
 } from './personalProfile.api';
 
 export const PersonalProfilePage = () => {
@@ -92,6 +95,30 @@ export const PersonalProfilePage = () => {
     }
   };
 
+  // Ver detalles de métricas
+  const handleViewMetricDetails = (metricType) => {
+    console.log('Ver detalles de:', metricType);
+    // Aquí se podría abrir un modal o navegar a una página de detalles
+  };
+
+  // Cambiar contraseña
+  const handleChangePassword = () => {
+    console.log('Cambiar contraseña');
+    // Aquí se abriría un modal para cambiar contraseña
+  };
+
+  // Habilitar 2FA
+  const handleEnable2FA = () => {
+    console.log('Habilitar 2FA');
+    // Aquí se abriría un modal para configurar 2FA
+  };
+
+  // Eliminar cuenta
+  const handleDeleteAccount = () => {
+    console.log('Eliminar cuenta');
+    // Aquí se abriría un modal de confirmación
+  };
+
   // Mostrar estado de carga
   if (loading && !user) {
     return <LoadingState />;
@@ -130,12 +157,22 @@ export const PersonalProfilePage = () => {
               isEditing={isEditing}
               onSave={handleSaveProfile}
             />
+            
+            {/* Panel de seguridad */}
+            <SecurityPanel
+              onChangePassword={handleChangePassword}
+              onEnable2FA={handleEnable2FA}
+              onDeleteAccount={handleDeleteAccount}
+            />
           </div>
           
           {/* Columna secundaria */}
           <div className="space-y-6">
             {/* Métricas de uso */}
-            <UsageMetrics metrics={metrics} />
+            <UsageMetrics 
+              metrics={metrics} 
+              onViewDetails={handleViewMetricDetails}
+            />
             
             {/* Panel de preferencias */}
             <PreferencesPanel

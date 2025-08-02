@@ -16,9 +16,10 @@ export const SearchBar = ({ searchTerm, onSearchChange, onReset }) => {
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage focus:border-transparent"
+            aria-label="Buscar terapeutas por nombre o especialidad"
           />
         </div>
-        <Button variant="outline" onClick={onReset}>
+        <Button variant="outline" onClick={onReset} aria-label="Limpiar búsqueda">
           Reset
         </Button>
       </div>
@@ -96,12 +97,25 @@ export const FiltersPanel = ({
   isMobile = false 
 }) => {
   const therapyTypes = [
-    'Psicología Clínica',
-    'Terapia de Pareja',
-    'Psicología Infantil',
-    'Terapia Familiar',
-    'Mindfulness',
-    'Terapia Cognitivo-Conductual'
+    'Reiki',
+    'Sanación con Cristales',
+    'Aromaterapia',
+    'Equilibrio de Chakras',
+    'Acupuntura',
+    'Lectura de Tarot',
+    'Astrología',
+    'Reflexología',
+    'Flores de Bach',
+    'Limpieza Energética',
+    'Meditación Kundalini',
+    'Medicina China',
+    'Videncia',
+    'Terapia Floral'
+  ];
+
+  const modalityOptions = [
+    { value: 'presencial', label: 'Presencial' },
+    { value: 'online', label: 'Online' }
   ];
 
   const panelClasses = isMobile
@@ -140,6 +154,7 @@ export const FiltersPanel = ({
               value={filters.location || ''}
               onChange={(e) => onFiltersChange({ ...filters, location: e.target.value })}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage"
+              aria-label="Filtrar por localización"
             />
           </div>
         </div>
@@ -184,6 +199,40 @@ export const FiltersPanel = ({
             onFiltersChange({ ...filters, availability })
           }
         />
+
+        {/* Modalidad */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Modalidad
+          </label>
+          <div className="space-y-2">
+            {modalityOptions.map((option) => (
+              <label key={option.value} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={filters.modality?.includes(option.value) || false}
+                  onChange={(e) => {
+                    const currentModality = filters.modality || [];
+                    if (e.target.checked) {
+                      onFiltersChange({ 
+                        ...filters, 
+                        modality: [...currentModality, option.value] 
+                      });
+                    } else {
+                      onFiltersChange({ 
+                        ...filters, 
+                        modality: currentModality.filter(m => m !== option.value) 
+                      });
+                    }
+                  }}
+                  className="mr-2 h-4 w-4 text-sage focus:ring-sage border-gray-300 rounded"
+                  aria-label={`Filtrar por modalidad ${option.label}`}
+                />
+                <span className="text-sm text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         {/* Valoración */}
         <RatingSlider
@@ -278,19 +327,19 @@ export const TherapistCard = ({ therapist, onViewProfile }) => {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <Card className="hover:shadow-md transition-shadow duration-200 bg-white border border-gray-200">
       <div className="flex gap-4">
         {/* Foto del terapeuta */}
         <div className="flex-shrink-0">
-          <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border">
             {therapist.avatar ? (
               <img 
                 src={therapist.avatar} 
-                alt={therapist.name}
+                alt={`Foto de perfil de ${therapist.name}`}
                 className="w-full h-full object-cover rounded-lg"
               />
             ) : (
-              <div className="text-gray-400 text-2xl font-semibold">
+              <div className="text-gray-600 text-2xl font-semibold">
                 {therapist.name.charAt(0)}
               </div>
             )}
@@ -301,10 +350,10 @@ export const TherapistCard = ({ therapist, onViewProfile }) => {
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h3 className="text-lg font-semibold text-deep truncate">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
                 {therapist.name}
               </h3>
-              <p className="text-sm text-gray-600">{therapist.credentials}</p>
+              <p className="text-sm text-gray-700">{therapist.credentials}</p>
             </div>
             <div className="text-right">
               <div className="text-lg font-semibold text-sage">
@@ -325,10 +374,26 @@ export const TherapistCard = ({ therapist, onViewProfile }) => {
                 </span>
               ))}
               {therapist.specialties?.length > 3 && (
-                <span className="text-xs text-gray-500">+{therapist.specialties.length - 3} más</span>
+                <span className="text-xs text-gray-600">+{therapist.specialties.length - 3} más</span>
               )}
             </div>
           </div>
+
+          {/* Modalidad */}
+          {therapist.modality && (
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-1">
+                {therapist.modality.map((mod, index) => (
+                  <span 
+                    key={index}
+                    className="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full border border-blue-200"
+                  >
+                    {mod === 'presencial' ? 'Presencial' : 'Online'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Rating y disponibilidad */}
           <div className="flex items-center justify-between">
@@ -336,23 +401,23 @@ export const TherapistCard = ({ therapist, onViewProfile }) => {
               <div className="flex items-center">
                 {renderStars(therapist.rating)}
               </div>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-700">
                 {therapist.rating} ({therapist.reviewCount} reseñas)
               </span>
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
               <Clock className="h-4 w-4" />
               <span>{therapist.nextAvailable}</span>
             </div>
           </div>
 
           {/* Localización */}
-          <div className="flex items-center gap-1 mt-2 text-sm text-gray-600">
+          <div className="flex items-center gap-1 mt-2 text-sm text-gray-700">
             <MapPin className="h-4 w-4" />
             <span>{therapist.location}</span>
             {therapist.distance && (
-              <span className="text-gray-400">• {therapist.distance} km</span>
+              <span className="text-gray-500">• {therapist.distance} km</span>
             )}
           </div>
         </div>
@@ -453,22 +518,109 @@ export const ViewToggle = ({ currentView, onViewChange }) => {
   );
 };
 
-// Componente de mapa (placeholder)
+// Componente de mapa mejorado
 export const TherapistMap = ({ therapists, onTherapistSelect }) => {
+  const [selectedTherapist, setSelectedTherapist] = useState(null);
+
+  // Coordenadas simuladas para Madrid
+  const madridCoords = { lat: 40.4168, lng: -3.7038 };
+  
+  // Generar coordenadas simuladas para cada terapeuta basadas en su ubicación
+  const getTherapistCoords = (therapist) => {
+    const baseCoords = {
+      'Madrid Centro': { lat: 40.4168, lng: -3.7038 },
+      'Salamanca': { lat: 40.4300, lng: -3.6827 },
+      'Chamberí': { lat: 40.4378, lng: -3.7044 },
+      'Retiro': { lat: 40.4152, lng: -3.6844 },
+      'Malasaña': { lat: 40.4267, lng: -3.7038 },
+      'Arganzuela': { lat: 40.3980, lng: -3.6980 },
+      'Chueca': { lat: 40.4215, lng: -3.6960 },
+      'Lavapiés': { lat: 40.4087, lng: -3.7003 }
+    };
+    
+    return baseCoords[therapist.location] || madridCoords;
+  };
+
   return (
     <Card className="h-96">
-      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Vista de Mapa
-          </h3>
-          <p className="text-gray-600">
-            Integración con Leaflet o Mapbox GL pendiente
+      <div className="h-full bg-gray-50 rounded-lg relative overflow-hidden">
+        {/* Mapa simulado con marcadores */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100">
+          {/* Simulación de calles */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-0 right-0 h-0.5 bg-gray-300 opacity-60"></div>
+            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300 opacity-60"></div>
+            <div className="absolute top-3/4 left-0 right-0 h-0.5 bg-gray-300 opacity-60"></div>
+            <div className="absolute left-1/4 top-0 bottom-0 w-0.5 bg-gray-300 opacity-60"></div>
+            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-300 opacity-60"></div>
+            <div className="absolute left-3/4 top-0 bottom-0 w-0.5 bg-gray-300 opacity-60"></div>
+          </div>
+          
+          {/* Marcadores de terapeutas */}
+          {therapists.map((therapist, index) => {
+            const position = {
+              left: `${20 + (index % 4) * 20}%`,
+              top: `${20 + Math.floor(index / 4) * 25}%`
+            };
+            
+            return (
+              <div
+                key={therapist.id}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                style={position}
+                onClick={() => {
+                  setSelectedTherapist(therapist);
+                  onTherapistSelect(therapist.id);
+                }}
+              >
+                <div className="relative">
+                  <div className="w-8 h-8 bg-sage rounded-full border-2 border-white shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                      {therapist.name}
+                      <div className="text-gray-300">€{therapist.price}/sesión</div>
+                    </div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Controles del mapa */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <button className="w-8 h-8 bg-white rounded shadow-md flex items-center justify-center hover:bg-gray-50">
+            <span className="text-lg font-bold text-gray-600">+</span>
+          </button>
+          <button className="w-8 h-8 bg-white rounded shadow-md flex items-center justify-center hover:bg-gray-50">
+            <span className="text-lg font-bold text-gray-600">−</span>
+          </button>
+        </div>
+        
+        {/* Información del mapa */}
+        <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-md p-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Map className="h-4 w-4 text-sage" />
+            <span className="font-medium text-gray-900">
+              {therapists.length} terapeutas en Madrid
+            </span>
+          </div>
+          <p className="text-xs text-gray-600 mt-1">
+            Haz clic en los marcadores para ver detalles
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Mostrando {therapists.length} terapeutas en el área
-          </p>
+        </div>
+        
+        {/* Leyenda */}
+        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md p-3">
+          <div className="flex items-center gap-2 text-xs">
+            <div className="w-3 h-3 bg-sage rounded-full"></div>
+            <span className="text-gray-700">Terapeuta disponible</span>
+          </div>
         </div>
       </div>
     </Card>

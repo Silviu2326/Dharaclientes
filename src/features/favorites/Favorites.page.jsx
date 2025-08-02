@@ -3,6 +3,7 @@ import {
   FavoritesHeader,
   FavoritesList,
   AlertsPanel,
+  AlertsInfoModal,
   ErrorState
 } from './favorites.components';
 import {
@@ -24,16 +25,25 @@ export const Favorites = () => {
   // Estados de filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const [selectedCategory, setSelectedCategory] = useState('');
   
   // Estados de alertas
   const [alertSettings, setAlertSettings] = useState({
     frequency: 'immediate',
     channels: {
       email: true,
-      push: true
+      push: true,
+      sms: false
+    },
+    alertTypes: {
+      availability: true,
+      messages: true,
+      priceChanges: false,
+      reminders: true
     }
   });
   const [showAlertsPanel, setShowAlertsPanel] = useState(false);
+  const [showAlertsInfoModal, setShowAlertsInfoModal] = useState(false);
   
   // Estados de UI
   const [removingId, setRemovingId] = useState(null);
@@ -86,6 +96,11 @@ export const Favorites = () => {
   // Manejar ordenamiento
   const handleSort = (newSortBy) => {
     setSortBy(newSortBy);
+  };
+
+  // Manejar filtro por categoría
+  const handleCategoryFilter = (category) => {
+    setSelectedCategory(category);
   };
 
   // Remover de favoritos
@@ -167,11 +182,45 @@ export const Favorites = () => {
     loadFavorites();
   };
 
+  // Función para obtener etiquetas de categorías
+  const getCategoryLabel = (category) => {
+    const labels = {
+      individual: 'Terapia Individual',
+      couple: 'Terapia de Pareja',
+      family: 'Terapia Familiar',
+      group: 'Terapia Grupal',
+      child: 'Psicología Infantil',
+      adolescent: 'Psicología Adolescente'
+    };
+    return labels[category] || 'Otros';
+  };
+
+  // Obtener categorías disponibles
+  const categories = useMemo(() => {
+    const categoryCount = {};
+    favorites.forEach(fav => {
+      const category = fav.category || 'individual';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+    
+    return Object.entries(categoryCount).map(([value, count]) => ({
+      value,
+      label: getCategoryLabel(value),
+      count
+    }));
+  }, [favorites]);
+
   // Favoritos filtrados y ordenados
   const processedFavorites = useMemo(() => {
     let filtered = searchFavorites(favorites, searchTerm);
+    
+    // Filtrar por categoría
+    if (selectedCategory) {
+      filtered = filtered.filter(fav => (fav.category || 'individual') === selectedCategory);
+    }
+    
     return sortFavorites(filtered, sortBy);
-  }, [favorites, searchTerm, sortBy]);
+  }, [favorites, searchTerm, sortBy, selectedCategory]);
 
   // Renderizar estado de error
   if (error && !loading) {
@@ -184,12 +233,15 @@ export const Favorites = () => {
 
   return (
     <div className="space-y-6">
-      {/* Encabezado con búsqueda y ordenamiento */}
+      {/* Encabezado con búsqueda, filtros y ordenamiento */}
       <FavoritesHeader
         onSearch={handleSearch}
         onSort={handleSort}
+        onCategoryFilter={handleCategoryFilter}
         searchTerm={searchTerm}
         sortBy={sortBy}
+        selectedCategory={selectedCategory}
+        categories={categories}
       />
 
       {/* Panel de configuración de alertas */}
@@ -214,9 +266,19 @@ export const Favorites = () => {
         </div>
       )}
 
-      {/* Botón para mostrar/ocultar panel de alertas */}
+      {/* Botones para alertas */}
       {!showAlertsPanel && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowAlertsInfoModal(true)}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            title="Información sobre alertas"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            ¿Qué son las alertas?
+          </button>
           <button
             onClick={() => setShowAlertsPanel(true)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
@@ -238,6 +300,12 @@ export const Favorites = () => {
         onViewProfile={handleViewProfile}
       />
 
+      {/* Modal de información de alertas */}
+      <AlertsInfoModal 
+        isOpen={showAlertsInfoModal} 
+        onClose={() => setShowAlertsInfoModal(false)} 
+      />
+
       {/* Información adicional */}
       {!loading && processedFavorites.length > 0 && (
         <div className="text-center text-sm text-gray-500">
@@ -245,6 +313,42 @@ export const Favorites = () => {
           {searchTerm && (
             <span> • Filtrado por: "{searchTerm}"</span>
           )}
+          {selectedCategory && (
+            <span> • Categoría: {getCategoryLabel(selectedCategory)}</span>
+          )}
+        </div>
+      )}
+
+      {/* Mensaje cuando no hay resultados con filtros */}
+      {!loading && favorites.length > 0 && processedFavorites.length === 0 && (
+        <div className="text-center py-8">
+          <div className="text-gray-500 mb-4">
+            <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron resultados</h3>
+            <p className="text-gray-600">
+              No hay terapeutas que coincidan con los filtros aplicados.
+            </p>
+          </div>
+          <div className="space-x-3">
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-primary hover:text-primary-dark text-sm font-medium"
+              >
+                Limpiar búsqueda
+              </button>
+            )}
+            {selectedCategory && (
+              <button
+                onClick={() => setSelectedCategory('')}
+                className="text-primary hover:text-primary-dark text-sm font-medium"
+              >
+                Mostrar todas las categorías
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
