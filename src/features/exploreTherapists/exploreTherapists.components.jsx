@@ -54,9 +54,9 @@ export const RatingSlider = ({ minRating, onRatingChange }) => {
 // Selector de disponibilidad
 export const AvailabilityPicker = ({ availability, onAvailabilityChange }) => {
   const timeSlots = [
-    { value: 'morning', label: 'Mañana (8:00-12:00)' },
-    { value: 'afternoon', label: 'Tarde (12:00-18:00)' },
-    { value: 'evening', label: 'Noche (18:00-22:00)' },
+    { value: 'morning', label: 'Mañana ' },
+    { value: 'afternoon', label: 'Tarde ' },
+    { value: 'evening', label: 'Noche ' },
     { value: 'weekend', label: 'Fines de semana' }
   ];
 

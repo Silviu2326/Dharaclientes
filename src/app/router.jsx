@@ -22,6 +22,7 @@ import { PersonalProfilePage } from '../features/personalProfile/PersonalProfile
 import { AccountSettingsPage } from '../features/accountSettings/AccountSettings.page';
 import { HelpCenterPage } from '../features/helpCenter/HelpCenter.page';
 import { PrivacyCommitmentPage } from '../features/privacyCommitment/PrivacyCommitment.page';
+import { TherapyDictionaryPage } from '../features/diccionario de terapias y dolencias/TherapyDictionary.page';
 
 const PrivateRoute = ({ children }) => {
   // Temporarily bypass authentication completely
@@ -147,6 +148,14 @@ export const AppRouter = () => {
         <PrivateRoute>
           <DashboardLayout>
             <HelpCenterPage />
+          </DashboardLayout>
+        </PrivateRoute>
+      } />
+
+      <Route path="/therapy-dictionary" element={
+        <PrivateRoute>
+          <DashboardLayout>
+            <TherapyDictionaryPage />
           </DashboardLayout>
         </PrivateRoute>
       } />

@@ -8,8 +8,8 @@ export const DocsHeader = ({ onSearch, onFilterSession, searchTerm, selectedSess
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold text-deep">Documentos Recibidos</h1>
-        <p className="text-gray-600 mt-2">Documentos compartidos por tus terapeutas</p>
+        <h1 className="text-3xl font-bold text-deep">Diario Personal y Documentos</h1>
+        <p className="text-gray-600 mt-2">Registra tu diario personal y revisa documentos compartidos por tus terapeutas</p>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
