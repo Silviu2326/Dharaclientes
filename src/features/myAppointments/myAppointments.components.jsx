@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, User, MessageCircle, X, RotateCcw, Download, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, Clock, User, MessageCircle, X, RotateCcw, Download, ChevronLeft, ChevronRight, Filter, FileText } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
@@ -193,7 +193,7 @@ export const AppointmentsCalendar = ({ appointments, onDateClick, currentDate, o
 };
 
 // Tarjeta de cita individual
-export const AppointmentCard = ({ appointment, onReschedule, onCancel, onChat }) => {
+export const AppointmentCard = ({ appointment, onReschedule, onCancel, onChat, onRequestJustification }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'confirmed': return 'text-green-600 bg-green-50';
@@ -274,7 +274,7 @@ export const AppointmentCard = ({ appointment, onReschedule, onCancel, onChat })
           </div>
         )}
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {canModify && (
             <>
               <Button
@@ -299,6 +299,18 @@ export const AppointmentCard = ({ appointment, onReschedule, onCancel, onChat })
             </>
           )}
           
+          {(appointment.status === 'completed' || isPast) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRequestJustification(appointment)}
+              className="flex items-center gap-1 text-sage border-sage hover:bg-sage hover:text-white"
+            >
+              <FileText className="h-4 w-4" />
+              Justificante
+            </Button>
+          )}
+          
           <Button
             size="sm"
             onClick={() => onChat(appointment.therapist.id)}
@@ -314,7 +326,7 @@ export const AppointmentCard = ({ appointment, onReschedule, onCancel, onChat })
 };
 
 // Lista de citas
-export const AppointmentsList = ({ appointments, onReschedule, onCancel, onChat, loading = false }) => {
+export const AppointmentsList = ({ appointments, onReschedule, onCancel, onChat, onRequestJustification, loading = false }) => {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -692,7 +704,7 @@ export const IcsButton = ({ appointments }) => {
 };
 
 // Modal para mostrar detalles de citas del día
-export const DayDetailsModal = ({ appointments, isOpen, onClose, onReschedule, onCancel, onChat }) => {
+export const DayDetailsModal = ({ appointments, isOpen, onClose, onReschedule, onCancel, onChat, onRequestJustification }) => {
   if (!isOpen || appointments.length === 0) return null;
 
   const selectedDate = appointments[0]?.date;
@@ -718,6 +730,7 @@ export const DayDetailsModal = ({ appointments, isOpen, onClose, onReschedule, o
               onReschedule={onReschedule}
               onCancel={onCancel}
               onChat={onChat}
+              onRequestJustification={onRequestJustification}
             />
           ))}
         </div>
@@ -815,5 +828,138 @@ export const AppointmentFilters = ({ filters, onFiltersChange }) => {
         </Button>
       </div>
     </Card>
+  );
+};
+
+// Modal para solicitar justificante
+export const JustificationModal = ({ appointment, isOpen, onClose, onConfirm }) => {
+  const [formData, setFormData] = useState({
+    reason: '',
+    additionalInfo: '',
+    email: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      await onConfirm(appointment.id, formData);
+      onClose();
+      setFormData({ reason: '', additionalInfo: '', email: '' });
+    } catch (error) {
+      console.error('Error al solicitar justificante:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (!isOpen || !appointment) return null;
+
+  const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-deep">Solicitar Justificante</h3>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Información de la cita */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 className="font-medium text-deep mb-2">Detalles de la cita</h4>
+            <div className="space-y-1 text-sm text-gray-600">
+              <p><strong>Terapeuta:</strong> {appointment.therapist.name}</p>
+              <p><strong>Especialidad:</strong> {appointment.therapist.specialty}</p>
+              <p><strong>Fecha:</strong> {format(appointmentDateTime, 'EEEE, d MMMM yyyy', { locale: es })}</p>
+              <p><strong>Hora:</strong> {format(appointmentDateTime, 'HH:mm')}</p>
+              <p><strong>Ubicación:</strong> {appointment.location}</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Motivo del justificante *
+              </label>
+              <select
+                value={formData.reason}
+                onChange={(e) => handleChange('reason', e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage"
+              >
+                <option value="">Seleccionar motivo</option>
+                <option value="trabajo">Justificante laboral</option>
+                <option value="estudios">Justificante académico</option>
+                <option value="seguro">Seguro médico</option>
+                <option value="personal">Uso personal</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email para envío *
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                required
+                placeholder="tu@email.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Información adicional
+              </label>
+              <textarea
+                value={formData.additionalInfo}
+                onChange={(e) => handleChange('additionalInfo', e.target.value)}
+                rows={3}
+                placeholder="Información adicional que desees incluir en el justificante..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage resize-none"
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Nota:</strong> El justificante será enviado a tu email en un plazo máximo de 24 horas laborables.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={isSubmitting || !formData.reason || !formData.email}
+              >
+                {isSubmitting ? 'Enviando...' : 'Solicitar Justificante'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };

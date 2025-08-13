@@ -10,7 +10,8 @@ import {
   RescheduleModal,
   CancelDialog,
   IcsButton,
-  DayDetailsModal
+  DayDetailsModal,
+  JustificationModal
 } from './myAppointments.components';
 import { getMyAppointments, rescheduleAppointment, cancelAppointment } from './myAppointments.api';
 import { useNavigate } from 'react-router-dom';
@@ -148,6 +149,7 @@ export const MyAppointments = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [selectedDayAppointments, setSelectedDayAppointments] = useState([]);
   const [showDayDetailsModal, setShowDayDetailsModal] = useState(false);
+  const [showJustificationModal, setShowJustificationModal] = useState(false);
 
   // Cargar citas al montar el componente
   useEffect(() => {
@@ -255,6 +257,27 @@ export const MyAppointments = () => {
 
   const handleChat = (therapistId) => {
     navigate(`/chat/${therapistId}`);
+  };
+
+  const handleRequestJustification = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowJustificationModal(true);
+  };
+
+  const handleJustificationConfirm = async (appointmentId, justificationData) => {
+    try {
+      // Aquí se haría la llamada a la API para solicitar el justificante
+      console.log('Solicitando justificante:', { appointmentId, justificationData });
+      
+      // Simular envío exitoso
+      alert('Justificante solicitado exitosamente. Recibirás un email en las próximas 24 horas.');
+      
+      setShowJustificationModal(false);
+      setSelectedAppointment(null);
+    } catch (error) {
+      console.error('Error al solicitar justificante:', error);
+      alert('Error al solicitar el justificante. Por favor, inténtalo de nuevo.');
+    }
   };
 
   const handleRescheduleConfirm = async (rescheduleData) => {
@@ -378,6 +401,7 @@ export const MyAppointments = () => {
                 onReschedule={handleReschedule}
                 onCancel={handleCancel}
                 onChat={handleChat}
+                onRequestJustification={handleRequestJustification}
                 loading={loading}
               />
             </div>
@@ -424,6 +448,17 @@ export const MyAppointments = () => {
         onReschedule={handleReschedule}
         onCancel={handleCancel}
         onChat={handleChat}
+        onRequestJustification={handleRequestJustification}
+      />
+
+      <JustificationModal
+        appointment={selectedAppointment}
+        isOpen={showJustificationModal}
+        onClose={() => {
+          setShowJustificationModal(false);
+          setSelectedAppointment(null);
+        }}
+        onConfirm={handleJustificationConfirm}
       />
     </div>
   );
